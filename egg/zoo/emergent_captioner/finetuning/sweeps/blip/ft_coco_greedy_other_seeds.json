@@ -1,0 +1,15 @@
+{
+    "n_epoch": [3],
+    "train_dataset": ["coco"],
+    "sender_image_size": [384],
+    "recv_image_size": [224],
+    "captioner_model": ["blip"],
+    "blip_model": ["base_coco"],
+    "batch_size": [100],
+    "recv_clip_model": ["ViT-B/32"],
+    "lr": [0.0000001],
+    "beam_size": [1],
+    "baseline": ["mean"],
+    "max_len":[40],
+    "random_seed": [222, 333, 444, 555, 666, 777]
+}

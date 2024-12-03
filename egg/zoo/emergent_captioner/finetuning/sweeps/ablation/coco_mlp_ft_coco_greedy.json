@@ -1,0 +1,12 @@
+{
+    "n_epoch": [50],
+    "clipcap_model_path": ["/private/home/rdessi/EGG/egg/zoo/emergent_captioner/clipclap_models/coco_weights.pt"],
+    "dataset": ["coco"],
+    "batch_size": [100],
+    "lr": [0.0000001],
+    "beam_size": [1],
+    "baseline": ["mean"],
+    "max_len":[40],
+    "random_seed": [111],
+    "kl_div_coeff": [0.5, 0.1, 0.05, 0.001, 0.005]
+}

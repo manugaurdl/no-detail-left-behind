@@ -1,0 +1,14 @@
+{
+    "n_epoch": [50],
+    "clipcap_model_path": ["/private/home/rdessi/EGG/egg/zoo/emergent_captioner/clipclap_models/conceptual_weights.pt"],
+    "dataset": ["conceptual"],
+    "batch_size": [100],
+    "recv_clip_model": ["ViT-B/32"],
+    "lr": [0.0000001],
+    "beam_size": [1],
+    "baseline": ["mean"],
+    "do_sample": [false],
+    "max_len":[40],
+    "random_seed": [111],
+    "num_hard_negatives": [0]
+}

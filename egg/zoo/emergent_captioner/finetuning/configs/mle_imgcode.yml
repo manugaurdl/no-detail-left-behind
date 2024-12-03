@@ -1,0 +1,78 @@
+DEBUG : False # if true : model saving, logging turned off.  
+INIT_VAL : True
+GREEDY_BASELINE : False
+SAVE_BEST_METRIC : True # to save nothing : = False and checkpoint_freq = 0
+ONLY_INFERENCE : True
+ONLY_VAL : False
+
+dataset : imagecode
+captions_type : "coco" #coco, (mistral, mistral_4), blip_holistic
+train_method : "discriminative" # (discriminative, cider, mle)
+prefix_len : 10
+warmup_ratio : 0.034
+official_clipcap_weights : /home/manugaur/official_clipcap/coco_weights.pt
+num_workers : 16
+CAPS_PER_IMG_train: 5 # maybe use in CL
+CAPS_PER_IMG_val: 5 # NLG eval
+fp16: False
+diff_lr: False
+contrastive : False
+reinforce : True
+mllm : "clipcap"
+
+
+lora : False
+finetune_model : llm # {gpt, clip} # automatically freeze gpt.transformer or CLIP
+lora_rank : 32
+clip_mlp_ft : False
+adapter_lora : False
+adapter_rank : 32
+clip_text : False
+
+# freezing layers
+freeze_wte : False
+freeze_adapter : False
+log_spice : False
+
+
+neg_mining:
+  curricullum : {100 : ["rand",5]}
+  save_optimizer : False
+  save_using_neg : False #save model i.e best on neg_dataloader 
+  val_bag_size : 5
+  val_level : "rand"
+
+resume_training : 
+  do : False
+  dir : sr_easy_bsz5
+  load_epoch  : 2 
+
+opts: 
+  baseline : mean
+  n_epochs : 20
+  batch_size : 16
+  lr : 9e-8 #2e-5
+  max_len : 50
+  checkpoint_freq : 1
+  num_workers : 16
+  dataset_dir : /home/manugaur/coco
+  mle_model_path : /home/manugaur/EGG/checkpoints/blip2mistral/mle/best.pt #it loads only sender.clipcap (adapter + llm)
+  checkpoint_dir : /home/manugaur/EGG/checkpoints/blip2mistral/sr
+  recv_clip_model : ViT-B/32 #ViT-L/14@336px
+
+WANDB:
+  logging : False
+  sweep : False
+  sweep_id: ""
+  sweep_run_count : 100
+  entity : "manugaur"
+  project : "emergent_captioner"
+  run_name :  final #adapter_r32 #lr9e8_lora_r32_mlp_ft 
+  log_mmvp_all : False
+
+inference : 
+  batch_size : 100
+  output_dir : /home/manugaur/EGG/inference_preds/
+
+#DEBUG, ONLY_INFERENCE,  INIT_VAL, logging, save_using_neg
+#CKPT_DIR = f"{data}/{sr}_{config[WANDB][run_name]}

@@ -1,0 +1,11 @@
+{
+    "n_epoch": [20],
+    "clipcap_model_path": ["/private/home/rdessi/EGG/egg/zoo/emergent_captioner/clipclap_models/coco_weights.pt"],
+    "train_dataset": ["coco"],
+    "batch_size": [100],
+    "recv_clip_model": ["ViT-B/32"],
+    "lr": [0.0000001],
+    "baseline": ["mean"],
+    "max_len":[40],
+    "random_seed": [222, 333, 444, 555, 666, 777]
+}

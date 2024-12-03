@@ -1,0 +1,76 @@
+DEBUG : False  # if true : model saving, logging turned off.  
+INIT_VAL : True
+GREEDY_BASELINE : True
+SAVE_BEST_METRIC : True # to save nothing : = False and checkpoint_freq = 0
+ONLY_INFERENCE : True
+SAVE_PREDS :  True
+ONLY_VAL : False
+
+CIDER_SR : True
+dataset : "coco"
+captions_type : "coco" #coco, (mistral, mistral_4), blip_holistic
+train_method : "cider" # (discriminative, cider, mle)
+prefix_len : 10
+warmup_ratio : 0.034
+official_clipcap_weights : /home/manugaur/official_clipcap/coco_weights.pt
+num_workers : 16
+CAPS_PER_IMG_train: 5 # maybe use in CL
+CAPS_PER_IMG_val: 5 # NLG eval
+fp16: False
+diff_lr: False
+contrastive : False
+reinforce : True
+mllm : "clipcap"
+
+#lora
+lora : True
+finetune_model : both # {gpt, clip} # automatically freeze gpt.transformer or CLIP
+lora_rank : 32
+clip_mlp_ft : True
+adapter_lora : False
+adapter_rank : 32
+clip_text : False
+
+# freezing layers
+freeze_wte : True
+freeze_adapter : False
+log_spice : False
+
+neg_mining:
+  curricullum : {3 : ["hard", 2] , 8 : ["hard",3], 10 : ["hard",5], 12 : ["hard",7], 14 : ["hard",10], 17 : ["hard",15], 20 : ["hard",20]}  #{20 : ["rand",5]}  #{4 : ["hard", 2] , 9 : ["hard",3], 13 : ["hard",5], 16 : ["hard",7], 20 : ["hard",10], 24 : ["hard",15], 28 : ["hard",20]} 
+  save_optimizer : True
+  save_using_neg : False #save model i.e best on neg_dataloader 
+  val_bag_size : 5
+  val_level : "rand"
+
+resume_training : 
+  do : False
+  dir : sr_easy_bsz5
+  load_epoch  : 2 
+
+opts: 
+  baseline : mean
+  batch_size : 100
+  lr : 1e-7 #2e-5
+  max_len : 50
+  checkpoint_freq : 0
+  num_workers : 16
+  dataset_dir : /workspace/manugaur/coco
+  mle_model_path : /workspace/manugaur/EGG/checkpoints/blip2mistral/mle/best.pt #it loads only sender.clipcap (adapter + llm)
+  checkpoint_dir : /workspace/manugaur/EGG/checkpoints/blip2mistral/sr
+  recv_clip_model : ViT-B/32
+
+WANDB:
+  logging : True
+  sweep : False
+  sweep_id: ""
+  sweep_run_count : 100
+  entity : "manugaur"
+  project : "emergent_captioner"
+  run_name : lambda_1e7_srlv_lr_1e7_g_baseline_curri #cider_greedyB_llm_lora_ft #adapter_r32 #lr9e8_lora_r32_mlp_ft 
+  log_mmvp_all : False
+
+inference : 
+  batch_size : 100
+  output_dir : /home/manugaur/EGG/inference_preds/
+
