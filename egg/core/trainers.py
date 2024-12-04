@@ -462,15 +462,14 @@ class Trainer:
         
         img_ids = full_interaction['cocoid']
 
-        #TMLR: beam search
-        caps = full_interaction['message'][0]
-        cocoids = [522198,190756,279806]
-        indices = [img_ids.index(i) for i in cocoids]
-        for _, idx in enumerate(indices):
-            print(cocoids[_])
-            print(caps[idx])
-        exit()
-
+        # #TMLR: beam search
+        # caps = full_interaction['message'][0]
+        # cocoids = [522198,190756,279806]
+        # indices = [img_ids.index(i) for i in cocoids]
+        # for _, idx in enumerate(indices):
+        #     print(cocoids[_])
+        #     print(caps[idx])
+        # exit()
 
         captions = full_interaction['captions']
         preds_per_batch = full_interaction['message']

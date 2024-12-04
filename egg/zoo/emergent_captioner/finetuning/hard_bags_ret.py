@@ -38,10 +38,6 @@ torch.manual_seed(seed)
 torch.cuda.manual_seed_all(seed)
 np.random.seed(seed)
 
-# "MASTER_ADDR", "MASTER_PORT", "WORLD_SIZE", "RANK", "LOCAL_RANK"
-# os.environ["CUDA_VISIBLE_DEVICES"] = str((0))
-
-
 def main(params, config):
     if config['baseline'] is not None:
         assert(config['use_benchmark'] and not config["use_gt"], "use_gt must be False and use_benchmark must be True when baseline is not None")
@@ -350,7 +346,7 @@ def main(params, config):
 
 if __name__ == "__main__":
     torch.autograd.set_detect_anomaly(True)
-    use_ddp = False    
+    use_ddp = False 
 
     if "LOCAL_RANK" in os.environ:
         use_ddp = True

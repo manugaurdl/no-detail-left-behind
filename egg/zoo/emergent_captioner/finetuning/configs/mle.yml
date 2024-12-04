@@ -1,9 +1,10 @@
-DEBUG : False
-INIT_VAL : True
+DEBUG : True
+INIT_VAL : False
 GREEDY_BASELINE : False
-SAVE_BEST_METRIC : True # to save nothing : = False and checkpoint_freq = 0
-ONLY_INFERENCE : True
+SAVE_BEST_METRIC : False # to save nothing : = False and checkpoint_freq = 0
+ONLY_INFERENCE : False
 ONLY_VAL : False
+
 dataset : coco
 captions_type : "mistral" #coco, (mistral, mistral_4), blip_holistic
 train_method : "mle" # (discriminative, cider, mle)
@@ -15,6 +16,7 @@ CAPS_PER_IMG_train: 5  # tokenisation
 CAPS_PER_IMG_val: 5  # NLG eval
 diff_lr: False
 fp16: False
+
 mllm : "clipcap" # {llava, clipcap}
 reinforce : False
 contrastive : False
@@ -43,7 +45,6 @@ neg_mining:
   val_bag_size : 5
   val_level : "rand"
 
-
 resume_training : 
   do : False
   dir : sr_easy_bsz5
@@ -62,7 +63,7 @@ opts:
   recv_clip_model : ViT-B/32 # ViT-L/14@336px
 
 WANDB :
-  logging : True
+  logging : False
   sweep : False
   sweep_id: ""
   sweep_run_count : 100

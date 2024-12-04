@@ -7,7 +7,6 @@ import torch.nn.functional as F
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 from egg.core.baselines import MeanBaseline, NoBaseline
 from egg.core.interaction import LoggingStrategy
-from egg.zoo.emergent_captioner.finetuning.blip import BlipSender
 from egg.zoo.emergent_captioner.finetuning.clipcap import ClipCapSender, LLavaSender, LLavaPhi
 from egg.zoo.emergent_captioner.finetuning.losses import get_loss, CiderReward, DiscriminativeLoss
 from egg.zoo.emergent_captioner.finetuning.receiver import ClipReceiver
