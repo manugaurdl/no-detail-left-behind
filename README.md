@@ -4,7 +4,7 @@
 [Manu Gaur](https://manugaurdl.github.io/), [Darshan Singh S](https://darshansingh11.github.io/), [Makarand Tapaswi](https://makarandtapaswi.github.io/)
 
 <p align="center">
-  <img src="imgs/nldb_teaser.png" width="500" />
+  <img src="imgs/nldb_teaser.jpg" width="500" />
 </p>
 
 <p float="left">
