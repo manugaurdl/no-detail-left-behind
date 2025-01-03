@@ -9,15 +9,25 @@
 
 <p float="left">
   <a href="https://arxiv.org/abs/2409.03025">
-    <img src="https://img.shields.io/badge/arXiv-2406.10889-b31b1b.svg" alt="arXiv"/>
+    <img src="https://img.shields.io/badge/arXiv-2409.03025-b31b1b.svg" alt="arXiv"/>
   </a>
   <a href="https://katha-ai.github.io/projects/no-detail-left-behind/">
     <img src="https://img.shields.io/badge/github%20pages-121013?style=for-the-badge&logo=github&logoColor=white" alt="Github Pages"/>
   </a>
+<a href="https://huggingface.co/manu-gaur/NDLB" target="_blank">
+    <img alt="HF Model: NDLB" src="https://img.shields.io/badge/%F0%9F%A4%97%20_Model-NDLB-ffc107?color=ffc107&logoColor=white" height="25" />
+</a>
+<a href="https://huggingface.co/datasets/manu-gaur/NDLB-TrueMatch-Benchmark" target="_blank">
+    <img alt="HF Dataset: TrueMatch" src="https://img.shields.io/badge/%F0%9F%A4%97%20_Benchmark-TrueMatch-ffc107?color=ffc107&logoColor=white" height="25" />
+</a>
+<a href="https://huggingface.co/datasets/manu-gaur/NDLB_data" target="_blank">
+    <img alt="HF Dataset: VCB Datasets" src="https://img.shields.io/badge/%F0%9F%A4%97%20_Data-Visual_Caption_Boosting-ffc107?color=ffc107&logoColor=white" height="25" />
+</a>
 </p>
 
 
-## Welcome to No Detail Left Behind, this repository contains data, code for MLE training, REINFORCE fine-tuning and self-retrieval evaluation on <i>TrueMatch</i> benchmark.
+## Welcome to the code repository for TMLR 2024 accepted paper No Detail Left Behind. 
+### This repository contains data and code for MLE training, REINFORCE fine-tuning, and self-retrieval evaluation on the <i>TrueMatch</i> benchmark.
 
 ### :zap:	For instant visualization of data samples, please visit our [Project Page](https://katha-ai.github.io/projects/no-detail-left-behind/)
 
