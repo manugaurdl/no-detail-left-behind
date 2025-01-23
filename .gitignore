@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL file
 #egg/zoo/emergent_captioner/finetuning/configs/
+*.sh
 cocoid2cider2/
 a100_checkpoints/
 a100_inference_preds/
