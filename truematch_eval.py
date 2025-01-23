@@ -24,13 +24,9 @@ def cocoid2img(coco_path, cocoid):
         return os.path.join(coco_path, f"COCO_val2014_{int(cocoid):012d}.jpg")
     return img_path
 
-def load_truematch_bags(bag_dir, bag_size, cocoid2idx): 
+def load_truematch_bags(bag_dir, bag_size): 
     """list of list of cococids"""
-    listofbags = json.load(open(os.path.join(bag_dir, f"{bag_size}.json"), "r")) 
-    out = []
-    for bag in listofbags:
-        out.append([cocoid2idx[str(cocoid)] for cocoid in bag])
-    return out
+    return json.load(open(os.path.join(bag_dir, f"{bag_size}.json"), "r")) 
 
 def load_scorer():
     model_name = "ViT-B/32"
@@ -43,8 +39,6 @@ def main(parser):
     
     start = time.time()
     os.makedirs(args.out_dir, exist_ok = True)
-    cocoid2idx = json.load(open("./data/NDLB-TrueMatch-Benchmark/test_val_cocoid2idx.json", "r"))
-    idx2cocoid = {v : k for k, v in cocoid2idx.items()}
     loss = DiscriminativeLoss()
     model, preprocess = load_scorer()
         
@@ -52,8 +46,8 @@ def main(parser):
         preds = pickle.load(f)
 
     def encode(bag):
-        caps = [preds[int(idx2cocoid[_])].strip() for _ in bag]
-        images = torch.cat([preprocess(Image.open(cocoid2img("./data/NDLB-TrueMatch-Benchmark/truematch_images", int(idx2cocoid[_])))).unsqueeze(0).to(DEVICE) for _ in bag])
+        caps = [preds[_].strip() for _ in bag]
+        images = torch.cat([preprocess(Image.open(cocoid2img("./data/NDLB-TrueMatch-Benchmark/truematch_images", int(_)))).unsqueeze(0).to(DEVICE) for _ in bag])
         text_feat = model.encode_text(clip.tokenize(caps, context_length=77, truncate=True).to(DEVICE))
         img_feat = model.encode_image(images)
 
@@ -67,7 +61,7 @@ def main(parser):
     for bag_size in [3,5,7]:
         recall_1 = []
         clip_s = []
-        truematch_bags = load_truematch_bags("./data/NDLB-TrueMatch-Benchmark/benchmark", bag_size, cocoid2idx)
+        truematch_bags = load_truematch_bags("./data/NDLB-TrueMatch-Benchmark/benchmark", bag_size)
         
         for idx , bag in tqdm(enumerate(truematch_bags), total = len(truematch_bags)):
             

@@ -46,7 +46,7 @@ pip install -r requirements.txt
 - Make sure you have [git-lfs](https://github.com/conda-forge/git-lfs-feedstock) installed.
 
 ```
-cd data
+mkdir data && cd data
 git clone https://huggingface.co/datasets/manu-gaur/NDLB-TrueMatch-Benchmark
 
 ```
@@ -82,7 +82,7 @@ cocoid = int(filename.split(".")[0].split("_")[-1])
 3. To evaluate the captioning system on the <i>TrueMatch</i> benchmark, run: 
 
 ```bash
-python -m egg.zoo.emergent_captioner.finetuning.truematch_eval \
+python truematch_eval.py \
   --preds_path [PATH_TO_GENERATED_CAPTIONS] \
   --out_dir [PATH_TO_YOUR_OUTPUT_DIR]
 ```
