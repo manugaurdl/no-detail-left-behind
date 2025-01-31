@@ -34,10 +34,6 @@ torch.manual_seed(seed)
 torch.cuda.manual_seed_all(seed)
 np.random.seed(seed)
 
-# "MASTER_ADDR", "MASTER_PORT", "WORLD_SIZE", "RANK", "LOCAL_RANK"
-# os.environ["CUDA_VISIBLE_DEVICES"] = str((0))
-os.environ["WANDB_API_KEY"] = "b389b1a0f740ce1efcfd09b332fd3a83ef6130fe"
-
 def get_loader(wrapper, level_bsz, data_kwargs):
         level, bsz = level_bsz.split("_")
         print(level_bsz)
@@ -51,7 +47,6 @@ def main(params, config):
     start = time.time()
     opts = get_common_opts(params=params)
     opts.fp16 = config['fp16']
-    opts.jatayu = os.path.isdir("/home/manugaur")
     opts.loss_type= config['train_method']
     store_job_and_task_id(opts)
     setup_for_distributed(opts.distributed_context.is_leader)
@@ -66,7 +61,7 @@ def main(params, config):
         "flickr": FlickrWrapper,
     }
     # args
-    wrapper = name2wrapper[opts.train_dataset](captions_type = config["captions_type"], dataset_dir = opts.dataset_dir, jatayu = opts.jatayu, neg_mining = config["neg_mining"])
+    wrapper = name2wrapper[opts.train_dataset](captions_type = config["captions_type"], dataset_dir = opts.dataset_dir  , neg_mining = config["neg_mining"])
     
     data_kwargs = dict(
         batch_size=opts.batch_size,
@@ -199,7 +194,6 @@ def main(params, config):
 
 if __name__ == "__main__":
     torch.autograd.set_detect_anomaly(True)
-    # torch.set_deterministic(True)
     use_ddp = False    
 
     if "LOCAL_RANK" in os.environ:

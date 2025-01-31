@@ -236,10 +236,8 @@ def hard_neg_collate(og_batch):
 
 class CocoWrapper:
 
-    def __init__(self, captions_type : str,  dataset_dir: str, jatayu: bool, neg_mining : dict):
+    def __init__(self, captions_type : str,  dataset_dir: str, neg_mining : dict):
         self.num_omitted_ids = 0
-        if dataset_dir is None:
-            dataset_dir = "/checkpoint/rdessi/datasets/coco"
         self.dataset_dir = Path(dataset_dir)
         self.captions_type = captions_type
         self.neg_mining = neg_mining
@@ -248,7 +246,7 @@ class CocoWrapper:
             self.id2caption = open_pickle(os.path.join(dataset_dir, f"synthetic_data/{self.captions_type}_preproc_5.pkl"))
             assert isinstance(list(self.id2caption.values())[0], list), "cocoid2cap is not id --> list of caps"
         
-        self.split2samples = self._load_splits(jatayu) # {test,val,train,restval} --> {test[0] :(img_path, list of 5 caps, cocoid)}
+        self.split2samples = self._load_splits(self.dataset_dir) # {test,val,train,restval} --> {test[0] :(img_path, list of 5 caps, cocoid)}
         self.cocoid2samples_idx = self.get_cocoid2sample_idx()   # cocoid <--> dataset idx         
 
         # val_test_list = self.split2samples['test']
@@ -327,13 +325,8 @@ class CocoWrapper:
         else:
             print(print(f"tokenized {split} captions exist"))
 
-    def _load_splits(self, jatayu):
-        if jatayu:
-            path2ann = "/home/manugaur/img_cap_self_retrieval/data/annotations/dataset_coco.json"
-        elif os.path.isdir("/home/ubuntu/pranav/pick_edit"):
-            path2ann = "/home/ubuntu/pranav/pick_edit/img_cap_self_retrieval/annotations/dataset_coco.json"
-        else:
-            path2ann = "/ssd_scratch/cvit/manu/img_cap_self_retrieval_clip/annotations/dataset_coco.json"
+    def _load_splits(self, dataset_dir):
+        path2ann = os.path.join(dataset_dir, "annotations/dataset_coco.json")
 
         with open(path2ann) as f:
             annotations = json.load(f)
