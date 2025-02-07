@@ -56,7 +56,7 @@ opts:
   max_len : 50
   checkpoint_freq : 1
   num_workers : 16
-  dataset_dir : /workspace/manugaur/coco
+  dataset_dir : /storage/datasets/coco
   mle_model_path : /workspace/manugaur/EGG/checkpoints/blip2mistral/mle/best.pt #it loads only sender.clipcap (adapter + llm)
   checkpoint_dir : /workspace/manugaur/EGG/checkpoints/blip2mistral/sr
   recv_clip_model : ViT-B/32

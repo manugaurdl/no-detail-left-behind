@@ -381,8 +381,6 @@ class Trainer:
 
         with torch.no_grad():
             for batch_id, batch in tqdm(enumerate(loader), total = len(loader)):
-                if 522198 not in batch[1] and 190756 not in batch[1] and 279806 not in batch[1]:
-                    continue
                 print("Generating")
                 if not isinstance(batch, Batch):
                     batch = Batch(*batch)

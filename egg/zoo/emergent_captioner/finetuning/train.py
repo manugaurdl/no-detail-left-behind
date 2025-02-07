@@ -122,7 +122,7 @@ def main(params, config):
     # Create trainers object
     if config["train_method"] == "mle" and not config['ONLY_INFERENCE']:
         n_epochs = [_ for _ in config['neg_mining']['curricullum'].keys()][-1]
-        total_steps = n_epochs* len(train_loaders['rand'])
+        total_steps = n_epochs* len(train_loaders['rand_5'])
         scheduler = get_linear_schedule_with_warmup(
                     optimizer, num_warmup_steps=int(total_steps * config["warmup_ratio"]), num_training_steps= total_steps)
 

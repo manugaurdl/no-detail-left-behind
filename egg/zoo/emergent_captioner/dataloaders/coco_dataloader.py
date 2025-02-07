@@ -131,12 +131,12 @@ class CocoDataset:
         #     os.makedirs(save_dir)
         # torch.save(sender_input, os.path.join(save_dir, f"{image_id}.pt"))
 
-        if self.mle_train:
+
+        if self.mle_train and torch.is_grad_enabled():
             padded_tokens, mask = self.get_tokens(image_id)
             aux = {"cocoid": torch.tensor([image_id]), "captions": captions[:self.caps_per_img], "tokens": padded_tokens, "mask" : mask}
         else:
             aux = {"cocoid": torch.tensor([image_id]), "captions": captions[:self.caps_per_img]}
-
         if self.mllm=='llava-phi':
             sender_input = recv_input
 
@@ -257,31 +257,32 @@ class CocoWrapper:
         # neg_train = False
         # if any(key in self.neg_mining["curricullum"] for key in ['easy', "medium", "hard"]):
         #     neg_train = True
-        self.split2bags = self.load_bags(jatayu, neg_mining['curricullum'])
+        self.split2bags = self.load_bags(neg_mining['curricullum'])
         print(f"{self.num_omitted_ids} cocoids are removed during preproc for {self.captions_type} captions")
 
-    def load_bags(self, jatayu, curricullum):
-        if jatayu:
-            # path2bags = "/home/manugaur/EGG/hard_negs/bags/top_k_sim/"  
-            path2bags = "/home/manugaur/EGG/hard_negs/bags/diff_levels/"
-        elif os.path.isdir("/home/ubuntu/pranav/pick_edit"):
-            path2bags = "/home/ubuntu/pranav/pick_edit/EGG/hard_negs/bags/diff_levels/"
-        else:
-            path2bags = "/ssd_scratch/cvit/manu/EGG/hard_negs/bags/top_k_sim/"
-
+    def load_bags(self, curricullum):
+        # if jatayu:
+        #     # path2bags = "/home/manugaur/EGG/hard_negs/bags/top_k_sim/"  
+        #     path2bags = "/home/manugaur/EGG/hard_negs/bags/diff_levels/"
+        # elif os.path.isdir("/home/ubuntu/pranav/pick_edit"):
+        #     path2bags = "/home/ubuntu/pranav/pick_edit/EGG/hard_negs/bags/diff_levels/"
+        # else:
+        #     path2bags = "/ssd_scratch/cvit/manu/EGG/hard_negs/bags/top_k_sim/"
+        path2bags = os.path.join(os.getcwd(), "data/hard_negs")
         """"split  = "train" | Removed val and testing. Train on this. Eval on our bags. """
         
         split2bags = {}
         for i in list(curricullum.values()):
-            level, bsz = i 
-            if level =="rand":
+            if i[0] =="rand":
                 continue
+            level, bsz = i 
             if level=="rand_crrclm":
                 l = []
                 for diff in ['easy', 'medium', 'train']:
                     l.extend(pickle.load(open(os.path.join(path2bags,f"{diff}/train/bsz_{bsz}.pkl"), "rb")))
             else:
-                l = pickle.load(open(os.path.join(path2bags,f"{level}/train/bsz_{bsz}.pkl"), "rb"))
+                # l = pickle.load(open(os.path.join(path2bags,f"{level}/train/bsz_{bsz}.pkl"), "rb"))
+                l = pickle.load(open(os.path.join(path2bags,f"bsz_{bsz}.pkl"), "rb"))
             split2bags[f"{level}_{bsz}"] = l
         
         
@@ -305,7 +306,8 @@ class CocoWrapper:
         """
 
         self.all_len = []
-        save_dir = os.path.join(self.dataset_dir, f"tokenized_caps/{self.captions_type}/{split}/")
+        # save_dir = os.path.join(self.dataset_dir, f"tokenized_caps/{self.captions_type}/{split}/")
+        save_dir = f"./data/tokenized_caps/{self.captions_type}/{split}/"
         if not os.path.isdir(save_dir) or len(os.listdir(save_dir))<1000:
             print(f"tokenizing {split} captions...")
             if not os.path.isdir(save_dir):
@@ -326,7 +328,7 @@ class CocoWrapper:
             print(print(f"tokenized {split} captions exist"))
 
     def _load_splits(self, dataset_dir):
-        path2ann = os.path.join(dataset_dir, "annotations/dataset_coco.json")
+        path2ann = os.path.join(dataset_dir, "dataset_coco.json")
 
         with open(path2ann) as f:
             annotations = json.load(f)
@@ -383,7 +385,7 @@ class CocoWrapper:
     ):
         if level_bsz is not None:
             level, bsz = level_bsz.split("_")
-        if mle_train and split != "test":
+        if mle_train and split == "train":
             self.tokenize(split)
         shuffle = not debug and split == "train"
         if split == "test_val":
