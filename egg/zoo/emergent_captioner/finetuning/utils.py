@@ -149,7 +149,7 @@ class ModelSaver(Callback):
 
                 # optimizer path corresponds to the best.pt checkpoint. Want optim state dict for 7th epoch ? --> train only till 7 epochs!
                 
-                if self.config['neg_mining']['save_optimizer'] and save_epoch:
+                if save_epoch:
                     optimizer_path =  os.path.join(str(self.trainer.checkpoint_path) ,f"optimizer{epoch}.pth")
                     torch.save(self.trainer.optimizer.state_dict(), optimizer_path)
                 # if self.is_ddp:
@@ -218,7 +218,7 @@ def process_config(config, use_ddp, sys_args):
         config["WANDB"]["logging"] = False
     
     if config["DEBUG"]:
-        config["SAVE_BEST_METRIC"] = False
+        # config["SAVE_BEST_METRIC"] = False
         config["opts"]["checkpoint_freq"] = 0
         config["WANDB"]["logging"] = False
     return config

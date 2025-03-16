@@ -34,13 +34,8 @@ torch.manual_seed(seed)
 torch.cuda.manual_seed_all(seed)
 np.random.seed(seed)
 
-def get_loader(wrapper, level_bsz, data_kwargs):
-        level, bsz = level_bsz.split("_")
-        print(level_bsz)
-        if level == "rand":
-            return wrapper.get_split(split="train", caps_per_img= config["CAPS_PER_IMG_train"], neg_mining = False,  **data_kwargs)
-        else:
-            return wrapper.get_split(split="train", caps_per_img= config["CAPS_PER_IMG_train"], neg_mining = True, level_bsz = level_bsz,  **data_kwargs)
+def get_loader(wrapper, bag_size, data_kwargs):
+    return wrapper.get_split(split="train", caps_per_img= config["CAPS_PER_IMG_train"], bag_size = bag_size,  **data_kwargs)
     
 
 def main(params, config):
@@ -61,7 +56,7 @@ def main(params, config):
         "flickr": FlickrWrapper,
     }
     # args
-    wrapper = name2wrapper[opts.train_dataset](captions_type = config["captions_type"], dataset_dir = opts.dataset_dir  , neg_mining = config["neg_mining"])
+    wrapper = name2wrapper[opts.train_dataset](captions_type = config["captions_type"], dataset_dir = opts.dataset_dir  , curri = config["curri"])
     
     data_kwargs = dict(
         batch_size=opts.batch_size,
@@ -76,28 +71,14 @@ def main(params, config):
         is_dist_leader = opts.distributed_context.is_leader,
     )
     
-    #train
-    train_loaders = {f"{i[0]}_{i[1]}" : get_loader(wrapper, f"{i[0]}_{i[1]}", data_kwargs) for i in config["neg_mining"]["curricullum"].values()}
-    #val
-    if config['train_method'] == "mle":
-        val_loader_rand = wrapper.get_split(split="val", caps_per_img = 5, neg_mining = False,  **data_kwargs)
-        val_loader_neg = None
-    else:
-        if config['neg_mining']['val_level'] =="rand":
-            val_loader_rand = wrapper.get_split(split="val", caps_per_img = config["CAPS_PER_IMG_val"], neg_mining = False,  **data_kwargs)
-            val_loader_neg = None
-            
-        else:
-            val_loader_neg = wrapper.get_split(split="val", caps_per_img = config["CAPS_PER_IMG_val"], neg_mining = True, level = config['neg_mining']['val_level'],  **data_kwargs)
-            val_loader_rand = None
+    #data loaders
+    train_loaders = {bag_size : get_loader(wrapper, bag_size, data_kwargs) for bag_size in config['curri'].values()}
 
-    #test
     data_kwargs["batch_size"] = config["inference"]["batch_size"]
     data_kwargs["mle_train"] = False
-    test_loader = wrapper.get_split(split="test_val", caps_per_img = config["CAPS_PER_IMG_val"], neg_mining = False, **data_kwargs)
-    # for idx, batch in tqdm(enumerate(train_loader),total = len(train_loader)):
-    #     pass
-
+    val_loader = wrapper.get_split(split="val", caps_per_img = config["CAPS_PER_IMG_val"], bag_size = 0, **data_kwargs)
+    test_loader = wrapper.get_split(split="test", caps_per_img = config["CAPS_PER_IMG_val"], bag_size = 0, **data_kwargs)
+    
     game = build_game(opts, config)
     # print_grad_info(game)
 
@@ -120,20 +101,21 @@ def main(params, config):
         game.sender.load_state_dict(game_state_dict)
         
     # Create trainers object
+
+    #if we are training MLE
     if config["train_method"] == "mle" and not config['ONLY_INFERENCE']:
-        n_epochs = [_ for _ in config['neg_mining']['curricullum'].keys()][-1]
-        total_steps = n_epochs* len(train_loaders['rand_5'])
+        n_epochs = list(config['curri'].keys())[-1]
+        total_steps = n_epochs* len(train_loaders[0])
         scheduler = get_linear_schedule_with_warmup(
                     optimizer, num_warmup_steps=int(total_steps * config["warmup_ratio"]), num_training_steps= total_steps)
 
         trainer = core.Trainer(
             game=game,
             optimizer=optimizer,
-            train_loaders = train_loaders,
             optimizer_scheduler = scheduler,
-            validation_data_rand =val_loader_rand,
-            validation_data_neg =val_loader_neg,
-            inference_data = test_loader,
+            train_loaders = train_loaders,
+            val_loader= val_loader,
+            test_loader = test_loader,
             callbacks=[
                 ConsoleLogger(as_json=True, print_train_loss=True),
                 ModelSaver(opts, config),
@@ -146,9 +128,8 @@ def main(params, config):
         game=game,
         optimizer=optimizer,
         train_loaders = train_loaders,
-        validation_data_rand =val_loader_rand,
-        validation_data_neg =val_loader_neg,
-        inference_data = test_loader,
+        val_loader= val_loader,
+        test_loader = test_loader,
         callbacks=[
             ConsoleLogger(as_json=True, print_train_loss=True),
             ModelSaver(opts, config),
@@ -175,7 +156,6 @@ def main(params, config):
         trainer.train(config, opts)
 
     #Get inference preds
-    config["inference"]["output_dir"] = '/home/manugaur/EGG/TMLR_preds/'
     if not os.path.isdir(config["inference"]["output_dir"]):
         os.makedirs(config["inference"]["output_dir"])
 

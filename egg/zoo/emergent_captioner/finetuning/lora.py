@@ -9,8 +9,8 @@ class LoRAParametrization(nn.Module):
     def __init__(self, features_in, features_out, rank, alpha, device = None):
         super().__init__()
         # device : same device as feats
-        self.lora_A = nn.Parameter(torch.zeros((rank,features_out)).to(device))
         self.lora_B = nn.Parameter(torch.zeros((features_in, rank)).to(device))
+        self.lora_A = nn.Parameter(torch.zeros((rank, features_out)).to(device))
         nn.init.normal_(self.lora_A, mean=0, std=1)
         
         # Section 4.1 of the paper: 
@@ -19,14 +19,14 @@ class LoRAParametrization(nn.Module):
         #   As a result, we simply set α to the first r we try and do not tune it. 
         #   This scaling helps to reduce the need to retune hyperparameters when we vary r.
         self.scale = alpha / rank
-        # self.enabled = True
+        self.enabled = True
 
     def forward(self, original_weights):
-        # if self.enabled:
-        # Return W + (B*A)*scale
-        return original_weights + torch.matmul(self.lora_B, self.lora_A).view(original_weights.shape) * self.scale
-        # else:
-        #     return original_weights
+        if self.enabled:
+            # Return W + (B*A)*scale
+            return original_weights + torch.matmul(self.lora_B, self.lora_A).view(original_weights.shape) * self.scale
+        else:
+            return original_weights
 
 
 def linear_layer_parameterization(layer, device, rank, lora_alpha=16):
@@ -89,6 +89,7 @@ def LoRA(model,  rank, model_type, config):
     
     if model_type=="clip" or model_type=="both":
         print(f"CLIP trainable params before LORA :{trainable_params(model.clip)}")
+        
         for l_num in range(12):
             parametrize.register_parametrization(
                 model.clip.visual.transformer.resblocks[l_num].attn,

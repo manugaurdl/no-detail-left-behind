@@ -1,4 +1,4 @@
-DEBUG : False # if true : model saving, logging turned off.  
+DEBUG : True # if true : model saving, logging turned off.  
 INIT_VAL : True
 GREEDY_BASELINE : False
 SAVE_BEST_METRIC : True # to save nothing : = False and checkpoint_freq = 0
@@ -77,3 +77,5 @@ inference :
 
 #DEBUG, ONLY_INFERENCE,  INIT_VAL, logging, save_using_neg
 #CKPT_DIR = f"{data}/{sr}_{config[WANDB][run_name]}
+
+

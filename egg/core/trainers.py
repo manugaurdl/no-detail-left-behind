@@ -75,11 +75,10 @@ def get_loader(epoch, ranges):
         prev_end = end
     raise Exception("epoch out of curricullum")
 
-def get_ds(epoch, config):
-    for start_epoch, level_bsz in config['neg_mining']['curricullum'].items():
-        level, bsz = level_bsz
+def get_bsz(epoch, config):
+    for start_epoch, bsz in config['curri'].items():
         if start_epoch > epoch:
-            return f"{level}_{bsz}"
+            return bsz
 
 def count_trainable_parameters(model):
     table = PrettyTable(["Modules", "Requires grad", "Trainable parameters"])
@@ -100,7 +99,7 @@ def count_trainable_parameters(model):
         table.add_row([name, requires_grad, params])
         total_params += params
 
-    print(table)
+    # print(table)
     print(f"Total Trainable Params: {total_params:,}")
     return total_params
 
@@ -115,16 +114,16 @@ class Trainer:
     Implements the training logic. Some common configuration (checkpointing frequency, path, validation frequency)
     is done by checking util.common_opts that is set via the CL.
     """
-
+    
+    # validation_data_rand, validation_data_neg, inference_data
     def __init__(
         self,
         game: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
-        train_loaders: dict,
         optimizer_scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
-        validation_data_rand: Optional[DataLoader] = None,
-        validation_data_neg: Optional[DataLoader] = None,
-        inference_data : Optional[DataLoader] = None,
+        train_loaders: dict = None,
+        val_loader: Optional[DataLoader] = None,
+        test_loader: Optional[DataLoader] = None,
         device: torch.device = None,
         callbacks: Optional[List[Callback]] = None,
         grad_norm: float = None,
@@ -147,9 +146,8 @@ class Trainer:
         self.optimizer = optimizer
         self.optimizer_scheduler = optimizer_scheduler
         self.train_loaders =  train_loaders
-        self.val_loader_rand = validation_data_rand
-        self.val_loader_neg = validation_data_neg
-        self.inference_loader = inference_data 
+        self.val_loader = val_loader
+        self.test_loader = test_loader 
         common_opts = get_opts()
         self.validation_freq = common_opts.validation_freq
         self.device = common_opts.device if device is None else device
@@ -316,13 +314,13 @@ class Trainer:
 
             return val_log, validation_interaction, metric
 
-    def log(self, log, interaction, metric, epoch, name, config = None, inference=False):
+    def log(self, log, interaction, metric, epoch, config = None, inference=False):
             """val log is plotted on wandb. Inference log is saved as json."""
 
             if inference:
                 #save inference preds
-                self.save_val_preds(interaction, config, inference = True)
-                
+                # self.save_val_preds(interaction, config, inference = True)
+                pass
                 # save inference log
                 # test_log = {}
                 # test_log['recall_1'] = interaction['acc'].mean().item()
@@ -341,33 +339,20 @@ class Trainer:
                 log["epoch"] = epoch
                 log["val_log_prob"] =  np.array(interaction['log_prob']).mean()
 
-                if name == "rand":
-                    wandb.log(log, step = self.STEP)
-                else:
-                    wandb.log({"VAL_R@1_NEG" : log["VAL_R@1"]}, step = self.STEP)
+                wandb.log(log, step = self.STEP)
 
 
 
-    def rand_neg_val(self, epoch : int, WANDB : bool,  config : dict, inference : bool = False):
+    def val(self, epoch : int, WANDB : bool,  config : dict, inference : bool = False):
         
         if inference:
-            test_log, interaction, metric = self.run_validation(self.inference_loader, epoch, config, inference)
-            self.log(test_log, interaction, metric, None, None, config = config, inference = inference)
-        
+            test_log, interaction, metric = self.run_validation(self.test_loader, epoch, config, inference)
+            self.log(test_log, interaction, metric, None, config = config, inference = inference)
         else:
-            if self.val_loader_rand is not None:
-                rand_log, rand_interaction, metric = self.run_validation(self.val_loader_rand, epoch, config, inference)
-            if self.val_loader_neg is not None:
-                rand_log, rand_interaction, metric = self.run_validation(self.val_loader_neg, epoch, config, inference)
-
+            rand_log, rand_interaction, metric = self.run_validation(self.val_loader, epoch, config, inference)
+            
             if WANDB:
                 self.log(rand_log, rand_interaction, metric, epoch, "rand", config = config)
-                
-                if self.val_loader_neg is not None:
-                    self.log(rand_log, rand_interaction, metric, epoch, "neg", config = config)
-            
-            if self.SAVE_USING_NEG and self.val_loader_neg is not None:
-                return metric
 
         torch.cuda.empty_cache()
         return metric
@@ -424,10 +409,7 @@ class Trainer:
                 interactions.append(interaction)
                 n_batches += 1
                 torch.cuda.empty_cache()
-        if config['dataset'] =="imagecode":
-            acc = np.array([x['acc'].item() for x in interactions]).mean()
-            print(f"IMAGE CoDe R@1 : {acc} ")
-            exit()
+        
 
         mean_loss /= n_batches
         #if data is dict/tensor --> its gets extended N_batch times. If its a list, a new list of list gets created of len = N_batch
@@ -613,7 +595,7 @@ class Trainer:
             
             if config['mllm']=="llava-phi" and batch_id % config["iters_per_eval"] == 0 and batch_id != 0:
                 torch.cuda.empty_cache()
-                metric = self.rand_neg_val(epoch + 1, WANDB, config = config,  inference=False)
+                metric = self.val(epoch + 1, WANDB, config = config,  inference=False)
             # Saving model
             # if (self.SAVE_BEST_METRIC and metric > self.best_metric_score) or (self.opts.checkpoint_freq > 0 and (epoch + 1) % self.opts.checkpoint_freq==0): 
             #     for idx, callback in enumerate(self.callbacks):
@@ -658,7 +640,7 @@ class Trainer:
 
         print(f"Total trainable params : {trainable_params(self.game.sender)}")
         count_trainable_parameters(self.game.sender)
-        n_epochs = n_epochs = [_ for _ in config['neg_mining']['curricullum'].keys()][-1]
+        n_epochs = list(config['curri'].keys())[-1]
         WANDB = config['WANDB']['logging']
         if self.distributed_context.is_distributed:
             WANDB = WANDB and self.distributed_context.is_leader
@@ -667,7 +649,6 @@ class Trainer:
         self.GREEDY_BASELINE = config['GREEDY_BASELINE']
         self.SAVE_BEST_METRIC = config['SAVE_BEST_METRIC']
         self.train_method = config["train_method"]
-        self.SAVE_USING_NEG = config["neg_mining"]["save_using_neg"] and config["neg_mining"]["do"]  
         self.best_metric_score = 0
         self.opts = opts
 
@@ -678,7 +659,7 @@ class Trainer:
 
         #INIT VAL
         if inference or (self.INIT_VAL and self.distributed_context.is_leader):
-            metric = self.rand_neg_val(self.start_epoch , WANDB, config = config,  inference=inference)
+            metric = self.val(self.start_epoch , WANDB, config = config,  inference=inference)
         if inference:                
             return
 
@@ -703,20 +684,18 @@ class Trainer:
             # for callback in self.callbacks:
             #     callback.on_epoch_begin(epoch + 1)
             
-            level_bsz = get_ds(epoch, config)                 
-            # loader = get_loader(epoch, config['neg_mining']['curricullum'])
+            bag_size = get_bsz(epoch, config)
             print("***"*50)
             print(f"epoch :{epoch}")
-            print(f"level_bsz : {level_bsz}")
             print("***"*50)
-            train_loss, train_interaction = self.train_epoch(self.train_loaders[level_bsz], WANDB, self.GREEDY_BASELINE, self.train_method, self.opts, config, epoch)
+            train_loss, train_interaction = self.train_epoch(self.train_loaders[bag_size], WANDB, self.GREEDY_BASELINE, self.train_method, self.opts, config, epoch)
             if WANDB:
                 wandb.log({"Avg Loss" : train_loss,
                             "epoch" : epoch + 1}, step = self.STEP)
 
             if self.distributed_context.is_leader:
                 torch.cuda.empty_cache()
-                metric = self.rand_neg_val(epoch + 1, WANDB, config = config)
+                metric = self.val(epoch + 1, WANDB, config = config)
                 
                 # Saving model
                 save_epoch = (self.opts.checkpoint_freq > 0 and (epoch + 1) % self.opts.checkpoint_freq==0)
@@ -769,17 +748,16 @@ class Trainer:
         val_preds =  dict(zip(cocoids, preds))
 
         if inference:
-            save_path = os.path.join(config["inference"]["output_dir"], f"{config['captions_type']}_{config['opts']['checkpoint_dir'].split('/')[-1]}.pkl")                                        
+            save_dir = os.path.join(config["inference"]["output_dir"], "inference_preds")
+            os.makedirs(save_dir, exist_ok=True)
+            save_path = os.path.join(save_dir, f"{config['captions_type']}_{config['opts']['checkpoint_dir'].split('/')[-1]}.pkl")                                        
             # save_path = os.path.join(config["inference"]["output_dir"], f"{config['captions_type']}_mle.pkl")                                        
         else:    
             save_path = os.path.join(config["opts"]["checkpoint_dir"].split("checkpoints")[0] + "val_preds", config["WANDB"]["run_name"] + f"_val_preds.pkl")                                        
         
-        # print("$$$$"*100)
-        # print(save_path)
-        if config['SAVE_PREDS']:
-            with open(save_path, "wb") as f:
-                pickle.dump(val_preds, f)
-            
+        with open(save_path, "wb") as f:
+            pickle.dump(val_preds, f)
+
         eval_on_bags(config)
 
 

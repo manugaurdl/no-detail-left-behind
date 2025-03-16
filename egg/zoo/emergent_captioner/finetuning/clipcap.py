@@ -253,6 +253,9 @@ class TransformerMapper(nn.Module):
             torch.randn(prefix_length, dim_embedding), requires_grad=True
         )
 
+    """
+    output learnable tokens from transformer. They will learn to exctract visual information required for captioning. Kinda like cross-attention
+    """
     def forward(self, x):
         x = self.linear(x).view(x.shape[0], self.clip_length, -1)
         prefix = self.prefix_const.unsqueeze(0).expand(
