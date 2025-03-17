@@ -21,13 +21,6 @@ fp16: False
 mllm : "clipcap" # {llava, clipcap}
 reinforce : False
 contrastive : False
-#hparams
-lora : False
-lora_rank : 32
-log_spice : False
-
-freeze_wte : False
-freeze_adapter : False
 
 #lora
 lora : False
@@ -37,6 +30,8 @@ clip_mlp_ft : False
 adapter_lora : False
 adapter_rank : 32
 clip_text : False
+freeze_wte : False
+freeze_adapter : False
 
 curri: {1: 0} # {n_epoch : bag_size}
 val_bag_size : 5

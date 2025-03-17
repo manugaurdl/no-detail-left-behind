@@ -162,9 +162,9 @@ def main(params, config):
     # # getting MLE preds : comment this and path to inference_preds and inference_log
     
     load_best_model(trainer, config)
+    trainer.game.sender.patch_model(batch_size = opts.batch_size, prefix_len = config['prefix_len'])
 
     config["WANDB"]["logging"] = False
-
     trainer.train(config, opts, inference = True) #init_val is run. val_data = inference data if inference = True.
 
     end = time.time()

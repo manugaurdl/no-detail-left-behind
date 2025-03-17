@@ -117,30 +117,27 @@ class ModelSaver(Callback):
             ):
                 self.trainer.checkpoint_path.mkdir(exist_ok=True, parents=True)
 
+                self.trainer.game.sender.unpatch_model()
+                
                 model_name  = f"e_{epoch if epoch else 'final'}.pt"
                 
-                x = self.trainer.game.sender.state_dict()
+                param_keys = [n for n,p in self.trainer.game.sender.named_parameters() if p.requires_grad]
+                state_dict = {k: v for k, v in self.trainer.game.sender.state_dict().items() if k in param_keys}
 
+                
 
-                # if self.config['finetune_model']=="clip":
-                # wte is always frozen. Adapter is always trained
-                for name in list(x.keys()):
-                    condition = 'lora' in name  or 'clip_project' in name
+                """following block also preserves only trainable params"""
+                # for name in list(x.keys()):
+                #     condition = 'lora' in name  or 'clip_project' in name
 
-                    # if not self.config['adapter_lora']:
-                    #     condition = condition and 'clip_project' in name
-                    
-                    # if not self.config['freeze_wte']:
-                    #     condition = condition and 'wte.weight' in name 
-
-                    if condition:
-                        continue
-                    else:
-                        x.pop(name)
+                #     if condition:
+                #         continue
+                #     else:
+                #         x.pop(name)
                 
                 if SAVE_BEST_METRIC:
                     torch.save(
-                        x,
+                        state_dict,
                         self.trainer.checkpoint_path / "best.pt",
                     )
                 if save_epoch:
@@ -183,36 +180,15 @@ def process_config(config, use_ddp, sys_args):
     """
     /home/manugaur —> /ssd_scratch/cvit/manu
     """
-    ssd_scratch = "/ssd_scratch/cvit/manu"
-    # jatayu  = os.path.isdir("/home/manugaur")
-    is_ada = os.path.isdir(ssd_scratch)
-    a100_dir = "/home/ubuntu/pranav/pick_edit"
-    # import ipdb;ipdb.set_trace()
-    if is_ada:
-        config['opts']['dataset_dir'] = os.path.join(ssd_scratch, config['opts']['dataset_dir'].split("manugaur/")[-1])
-        config['opts']['mle_model_path'] = os.path.join(ssd_scratch, config['opts']['mle_model_path'].split("manugaur/")[-1])
-        config['opts']['checkpoint_dir'] = os.path.join(ssd_scratch,config['opts']['checkpoint_dir'].split("manugaur/")[-1])
-        config["official_clipcap_weights"] = os.path.join(ssd_scratch, config["official_clipcap_weights"].split("manugaur/")[-1])
-        config["inference"]["output_dir"] = os.path.join(ssd_scratch, config["inference"]["output_dir"].split("manugaur/")[-1])
-        config['opts']['jatayu'] = not is_ada
-    elif os.path.isdir(a100_dir):
-        config['opts']['dataset_dir'] = os.path.join(a100_dir, config['opts']['dataset_dir'].split("manugaur/")[-1])
-        try:
-            config['opts']['mle_model_path'] = os.path.join(a100_dir, config['opts']['mle_model_path'].split("manugaur/")[-1])
-        except:
-            pass    
-        config['opts']['checkpoint_dir'] = os.path.join(a100_dir,config['opts']['checkpoint_dir'].split("manugaur/")[-1])
-        config["official_clipcap_weights"] = os.path.join(a100_dir, config["official_clipcap_weights"].split("manugaur/")[-1])
-        config["inference"]["output_dir"] = os.path.join(a100_dir, config["inference"]["output_dir"].split("manugaur/")[-1])
     if use_ddp:
         config["num_workers"] = 0
 
     config["captions_type"] = sys_args[1]
     config["opts"]["checkpoint_dir"] = os.path.join(config['opts']['checkpoint_dir'].split("checkpoints")[0], f"checkpoints/{sys_args[1] + '/' + sys_args[0].split('_')[0]}_{config['WANDB']['run_name']}") #data/method
     config["WANDB"]["run_name"] = f"{sys_args[0].split('_')[0]}_{sys_args[1]}_{config['WANDB']['run_name']}"#{method}_{data}
-    if "mle_model_path" in config["opts"]:
-        config["opts"]["mle_model_path"] = os.path.join(config['opts']['mle_model_path'].split("/checkpoints")[0], f"checkpoints/{sys_args[1]}/mle_final/best.pt") #mle_1_train_cap    
-        print(f"| Loaded MLE model :{config['opts']['mle_model_path']}")
+    # if "mle_model_path" in config["opts"]:
+    #     config["opts"]["mle_model_path"] = os.path.join(config['opts']['mle_model_path'].split("/checkpoints")[0], f"checkpoints/{sys_args[1]}/mle_final/best.pt") #mle_1_train_cap    
+        # print(f"| Loaded MLE model :{config['opts']['mle_model_path']}")
 
     if config["ONLY_INFERENCE"] or config["ONLY_VAL"]:
         config["WANDB"]["logging"] = False
@@ -274,19 +250,26 @@ def load_prev_state(config, game):
         return optim_state_dict, updated_weights
 
 def load_best_model(trainer, config):
+
     if config['mllm'] == "clipcap":   
         trainer.game.sender.unpatch_model()
 
     trained_wts = torch.load(os.path.join(config['opts']['checkpoint_dir'], "best.pt"))
-    updated_wts = trainer.game.sender.state_dict().copy()
+    model_params = trainer.game.sender.state_dict().copy()
+    for k in model_params.keys():
+        if k in trained_wts:
+            model_params[k] = trained_wts[k]
     
-    for k in list(trainer.game.sender.state_dict().keys()):
-        if 'sender.' + k in trained_wts:
-            updated_wts[k] = trained_wts['sender.' + k]
-        elif k in trained_wts:
-            updated_wts[k] = trained_wts[k]
+    trainer.game.sender.load_state_dict(model_params)
+    
 
-    trainer.game.sender.load_state_dict(updated_wts)
-    trainer.game.sender.patch_model(batch_size = config["inference"]["batch_size"], prefix_len = config['prefix_len'])
+    # for k in list(trainer.game.sender.state_dict().keys()):
+    #     if 'sender.' + k in trained_wts:
+    #         updated_wts[k] = trained_wts['sender.' + k]
+    #     elif k in trained_wts:
+    #         updated_wts[k] = trained_wts[k]
+
+    # trainer.game.sender.load_state_dict(updated_wts)
+    # trainer.game.sender.patch_model(batch_size = config["inference"]["batch_size"], prefix_len = config['prefix_len'])
 
     print(f"| LOADED BEST MODEL FOR INFERENCE ON TEST+VAL SET : {os.path.join(config['opts']['checkpoint_dir'], 'best.pt')}")

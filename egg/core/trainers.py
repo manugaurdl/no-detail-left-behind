@@ -99,7 +99,7 @@ def count_trainable_parameters(model):
         table.add_row([name, requires_grad, params])
         total_params += params
 
-    # print(table)
+    print(table)
     print(f"Total Trainable Params: {total_params:,}")
     return total_params
 
@@ -258,9 +258,6 @@ class Trainer:
                     'METEOR': summary["METEOR"],
                     "ROUGE_L" : summary['ROUGE_L'],
                     }
-
-        if config['log_spice'] and config['captions_type']!="blip2mistral":
-            val_log["SPICE"] = summary["SPICE"]
 
         if config["finetune_model"] == "clip":
             val_log["mmvp_avg"] = interaction['mmvp_avg']
@@ -467,7 +464,7 @@ class Trainer:
             for j, pred in enumerate(batch):
                 predictions[(i*bsz) + j] = [{"caption" :pred}]
         
-        summary = compute_nlg_metrics(predictions, gold_standard, spice = config["log_spice"] and config['captions_type']!="blip2mistral") # score for each idx stored in summary except bleu
+        summary = compute_nlg_metrics(predictions, gold_standard, spice = False) # score for each idx stored in summary except bleu
 
 
         # MMVP eval
